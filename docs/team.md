@@ -8,12 +8,12 @@ title:  Team
 
 ## USER 1
 ***shis7***: Sarah Shi
-https://github.com/stellurion
+[Github](https://github.com/stellurion)
 
 ## USER 2
 ***ncvuong***: Nathan Vuong
-https://github.com/NathanVuong
+[Github](https://github.com/NathanVuong)
 
 ## USER 3
 ***leannev1***: Leanne Vo
-https://github.com/lv-200
+[Github](https://github.com/lv-200)
