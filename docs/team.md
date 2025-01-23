@@ -7,10 +7,13 @@ title:  Team
 
 
 ## USER 1
-***UCI Net ID***: ucinetid1
+***shis7***: Sarah Shi
+https://github.com/stellurion
 
 ## USER 2
-***UCI Net ID***: ucinetid2
+***ncvuong***: Nathan Vuong
+https://github.com/NathanVuong
 
 ## USER 3
-***UCI Net ID***: ucinetid3
+***leannev1***: Leanne Vo
+https://github.com/lv-200
