@@ -135,7 +135,7 @@ for episode in range(num_episodes):
 
     total_reward = 0
     skip_frames = 4  # Process every 4th frame
-    for t in range(1000):
+    for t in range(10000):
         if t % skip_frames == 0:
             action = agent.select_action(state)
 
