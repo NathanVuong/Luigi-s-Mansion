@@ -1,10 +1,9 @@
 import gym_super_mario_bros
-import gymnasium
 import gym
 from nes_py.wrappers import JoypadSpace
 from gym_super_mario_bros.actions import SIMPLE_MOVEMENT
 from gym import wrappers
-from gym.wrappers.record_video import RecordVideo  # For Gym 0.26+
+from gym.wrappers.record_video import RecordVideo
 import numpy as np
 import torch
 import torch.nn as nn
@@ -14,8 +13,8 @@ from collections import deque
 import tensorflow as tf
 import time
 import os
-import imageio
 
+# Define the Q-Network model
 class QNetwork(nn.Module):
     def __init__(self, input_dim, output_dim):
         super(QNetwork, self).__init__()
@@ -111,7 +110,7 @@ env = JoypadSpace(env, SIMPLE_MOVEMENT)  # Discretize controls
 env = RecordVideo(
     env,
     video_folder=video_folder,
-    episode_trigger=lambda episode_id: True,  # Record all episodes
+    episode_trigger=lambda episode_id: episode_id % 10000 == 0,  # Record every 10,000 episodes
     name_prefix='mario-video-'
 )
 
@@ -132,7 +131,7 @@ for episode in range(num_episodes):
 
     state = env.reset()  # Gym 0.26+ returns (obs, info)
     state = np.array(state).flatten()
-    env.render()
+    # env.render()
 
     total_reward = 0
     skip_frames = 4  # Process every 4th frame
@@ -159,18 +158,12 @@ for episode in range(num_episodes):
 
     with writer.as_default():
         tf.summary.scalar('Total Reward', total_reward, step=episode)
-        # Log the video at the end of the episode, not sure this is working
-        video_path = os.path.join(video_folder, f"episode_{episode+1}.mp4")
-        if os.path.exists(video_path):
-            with open(video_path, "rb") as video_file:
-                video_data = video_file.read()
-                tf.summary.video(f"episode_{episode+1}", video_data, step=episode, max_outputs=1)
 
     # Ensure reset after each episode
     state = np.array(state).flatten()
 
 # Cleanup
 env.close()
-save_path = "saved_model_dqn.pth"
+save_path = "saved_model.pth"
 torch.save(agent.q_net.state_dict(), save_path)
 print(f"Model saved to {save_path}", flush=True)
