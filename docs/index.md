@@ -3,7 +3,7 @@ layout: default
 title:  Home
 ---
 
-Source code: https://github.com/NathanVuong/Luigi-s-Mansion
+Source code: https://github.com/NathanVuong/Luigi-s-Mansion 
 
 Reports:
 
@@ -11,8 +11,7 @@ Reports:
 - [Status](status.html)
 - [Final](final.html)
 
-We're using OpenAI’s Gym toolkit to implement a Double Q Learning Reinforcement Learning agent for Super Mario Bros.
-Reward is based on 
+We're using OpenAI’s Gym toolkit to implement a Double Q Learning Reinforcement Learning agent for Super Mario Bros. Our goal is to have Mario complete the first level. The RL's Reward driving Mario's actions are based on Mario's x position, the time he takes, and a death penalty. 
 
 ![Mario](https://pypi-camo.freetls.fastly.net/198f06f6c66355bf8b78cae634e8155028948538/68747470733a2f2f757365722d696d616765732e67697468756275736572636f6e74656e742e636f6d2f323138343436392f34303934393631332d37353432373333612d363833342d313165382d383935622d6365316363336166396462622e676966)
 

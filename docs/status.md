@@ -23,7 +23,7 @@ $$Q(s, a) ← Q(s, a) + α [r + γ max_{a'} Q(s’, a’) - Q(s, a)]$$
 r: immediate reward received after taking action a in state s   
 γ: a discount factor that balances immediate vs future rewards   
 s’: next state   
-a’:best action in s’   
+a’: best action in s’   
 Q(s’, a’) : estimated by neural network   
 
 The Bellman Equation utilizes the Mean Squared Error (MSE) as the goal is to optimize the difference between target Q-values (r + $\gamma$ max Q(s’, a’)) and predicted Q-values (Q(s, a)).  (Luu)
@@ -56,10 +56,10 @@ For the agent to explore different strategies before committing to an optimal po
 
 ### Neural Network
 
-The neural network is optimized with the Adam optimizer with a learning rate of .001.
-	Input Layer: Process flattened game state
-	Hidden Layer: Size 128 -> Size 64 -> Action Space Size, using ReLu activation functions
-	Output Layer: Predicts Q-values for each action
+The neural network is optimized with the Adam optimizer with a learning rate of .001.   
+	Input Layer: Process flattened game state   
+	Hidden Layer: Size 128 -> Size 64 -> Action Space Size, using ReLu activation functions   
+	Output Layer: Predicts Q-values for each action   
 
 ### Training Parameters
 The agent is trained for three episodes, each running for a maximum of 10,000 steps.  After training, the weights are saved for later use and video recordings of gameplay are saved for evaluation.
