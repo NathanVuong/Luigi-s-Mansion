@@ -12,10 +12,12 @@ We will be using OpenAI’s Gym toolkit to implement a Reinforcement Learning ag
 
 Our main algorithm to train an agent to play Super Mario Bros is Deep Q-Learning (DQN), which is Q-Learning with a neural network to approximate the optimal action-value function. This function, Q(s, a), represents the expected cumulative reward when taking an action a in state s and following the optimal policy after. (Luu)
 
-Optimal Policy Equation: $$π^*(s)=argamax​Q*(s,a)$$
+Optimal Policy Equation: $$π^*(s)=argamax​Q^*(s,a)$$   
+
 The optimal policy π* is a function that maps each state to the action that results in the highest Q-value.
 
-In DQN, the agent maintains a Q-table, which maps state-action pairs to expected future rewards. The Bellman Equation for Q-learning is used to update these values:
+In DQN, the agent maintains a Q-table, which maps state-action pairs to expected future rewards. The Bellman Equation for Q-learning is used to update these values:   
+
 $$Q(s, a) ← Q(s, a) + α [r + γ max_{a'} Q(s’, a’) - Q(s, a)]$$
 
 r: immediate reward received after taking action a in state s   
@@ -24,7 +26,7 @@ s’: next state
 a’:best action in s’   
 Q(s’, a’) : estimated by neural network   
 
-The Bellman Equation utilizes the Mean Squared Error (MSE) as the goal is to optimize the difference between target Q-values (r + $\Gamma$ max Q(s’, a’)) and predicted Q-values (Q(s, a)).  (Luu)
+The Bellman Equation utilizes the Mean Squared Error (MSE) as the goal is to optimize the difference between target Q-values (r + $\gamma$ max Q(s’, a’)) and predicted Q-values (Q(s, a)).  (Luu)
 
 $$L(θ) = \mathbb{E}[(r + γ max_{a'} Q(s’, a’; θ^-)- Q(s, a;θ))^2]$$
 
@@ -85,8 +87,8 @@ Once we finish the current iteration of model that will finish the level, we wan
 
 ## Resources Used
 Some of the resources we used include official documentation from OpenAI on their Gym environment as well as various random StackOverflow pages from other users who have run into similar issues as us.
-https://pypi.org/project/gym-super-mario-bros/
-https://www.gymlibrary.dev/index.html
-https://stackoverflow.com/search?q=gym+Super+Mario+bros&s=40640cc8-8588-47e6-8b29-9e3c8d397d5b
+* https://pypi.org/project/gym-super-mario-bros/
+* https://www.gymlibrary.dev/index.html
+* https://stackoverflow.com/search?q=gym+Super+Mario+bros&s=40640cc8-8588-47e6-8b29-9e3c8d397d5b
 
-Luu, Q. T. (2023, April 10). Q-Learning vs. Deep Q-Learning vs. Deep Q-Network | Baeldung on Computer Science. Www.baeldung.com. https://www.baeldung.com/cs/q-learning-vs-deep-q-learning-vs-deep-q-network
+Luu, Q. T. (2023, April 10). Q-Learning vs. Deep Q-Learning vs. Deep Q-Network \| Baeldung on Computer Science. www.baeldung.com. https://www.baeldung.com/cs/q-learning-vs-deep-q-learning-vs-deep-q-network
