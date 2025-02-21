@@ -3,7 +3,7 @@ layout: default
 title: Status
 ---
 
-<iframe width="560" height="315" src="https://www.youtube.com/watch?v=EzysVRQjWPM" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/EzysVRQjWPM" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 ## Project Summary
 We will be using OpenAI’s Gym toolkit to implement a Reinforcement Learning agent for Super Mario Bros. OpenAI provides a library called gym-super-mario-bros which allows users to emulate the original Super Mario Bros for the NES, giving us options to control Mario’s movement while also giving us feedback about the environment including things such as his X and Y position in the level and his accumulated score. We will be using these tools to train an agent that is capable of learning from the reward feedback and pathing towards finishing the first level of Super Mario Bros. 
