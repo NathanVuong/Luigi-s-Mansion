@@ -80,10 +80,15 @@ The agent is trained for three episodes, each running for a maximum of 10,000 st
 
 ## Evaluation
 
-We will be logging Mario’s reward progress to be viewed on Tensorboard to see if our agent is generally able to achieve a greater reward over time. Additionally, we will be generating videos periodically of Mario’s training episodes so we can visualize our agent’s progress and identify pitfalls.‌
+We are logging Mario’s reward progress to be viewed on Tensorboard to see if our agent is generally able to achieve a greater reward over time, similarly to Exercise 2. Additionally, we are generating videos periodically of Mario’s training episodes so we can visualize our agent’s progress and identify pitfalls.‌ After matching rewards and videos together to subjectively review reward performances, we are able to determine the cause of falling rewards and situations where our algorithm / parameters are inefficient, and tweak it. For example, when Mario gets stuck at a pipe, his reward goes down due to his time being a negative component of his reward. As a result of seeing this correlation, we were able to change our parameters, increase exploration, and allow the agent to better discover a way to get over the pipes.
+
+| Images          		 | Videos        		  |
+|------------------------|------------------------|
+| ![Image1](images/early.png) | <video width="300" controls><source src="videos/more_training.mp4" type="video/mp4">Your browser does not support the video tag.</video> |
+| ![Image2](images/trained.png) | <video width="300" controls><source src="videos/random_moves.mp4" type="video/mp4">Your browser does not support the video tag.</video> |
 
 ## Remaining Goals and Challenges
-Once we finish the current iteration of model that will finish the level, we want to add scene understanding to the model so it can more appropiately react to obstacles, change the reward function with custom information/elements, and potentially try a custom environment to test our model in a less controlled/unbiased environment.
+Once we finish the current iteration of model that will finish the level, we want to add scene understanding to the model so it can more appropiately react to obstacles, change the reward function with custom information/elements, and potentially try a custom environment to test our model in a less controlled/unbiased environment. Currently, our model is doing the most simple task of completing through a level without advanced movement, vectoring, and other tricks. We can train our agent to be more optimal with it movement, more optimal with its time, or more optimal with its score. We anticipate that we will continue to struggle with matching versions and recreating environments for each person to individually run. We will try packaging our enviornments and being cleaner with our package managers in order to keep the code and agent runnable for each member.
 
 ## Resources Used
 Some of the resources we used include official documentation from OpenAI on their Gym environment as well as various random StackOverflow pages from other users who have run into similar issues as us.
