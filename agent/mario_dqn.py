@@ -1,3 +1,10 @@
+#Ignore Log Warnings
+import warnings
+import os
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", category=UserWarning)
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
 import gym_super_mario_bros
 import gym
 from nes_py.wrappers import JoypadSpace
@@ -13,7 +20,10 @@ import random
 from collections import deque
 import tensorflow as tf
 import time
-import os
+import shutil
+
+SLURM_ID = os.getenv("SLURM_JOB_ID")
+verbose = False #set to true if you want to save each episode + more details
 
 # Define the Q-Network model
 class QNetwork(nn.Module):
@@ -126,6 +136,10 @@ writer = tf.summary.create_file_writer(log_dir)
 video_folder = "recorded_videos"
 os.makedirs(video_folder, exist_ok=True)
 
+# Set up episode models folder
+if verbose:
+    os.makedirs(SLURM_ID, exist_ok=True) 
+
 # Create the Mario environment
 env = gym_super_mario_bros.make('SuperMarioBros-v0')
 env = JoypadSpace(env, SIMPLE_MOVEMENT)  # Discretize controls
@@ -190,6 +204,12 @@ for episode in range(num_episodes):
     if episode % 10 == 0:
         agent.save_checkpoint(checkpoint_path)
 
+    if verbose:
+        # Save model checkpoint after each episode
+        save_path = f"{SLURM_ID}/saved_model_episode_{episode+1}.pth"
+        torch.save(agent.q_net.state_dict(), save_path)
+        print(f"Model saved to {save_path}", flush=True)
+
     with writer.as_default():
         tf.summary.scalar('Total Reward', total_reward, step=episode)
 
@@ -198,3 +218,7 @@ for episode in range(num_episodes):
 
 # Cleanup
 env.close()
+
+save_path = f"{SLURM_ID}_saved_model.pth" if not verbose else f"{SLURM_ID}/saved_model.pth"
+torch.save(agent.q_net.state_dict(), save_path)
+print(f"Model saved to {save_path}", flush=True)
