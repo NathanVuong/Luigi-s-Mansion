@@ -2,6 +2,7 @@ import gym_super_mario_bros
 import gym
 from nes_py.wrappers import JoypadSpace
 from gym_super_mario_bros.actions import SIMPLE_MOVEMENT
+from gym.wrappers import GrayScaleObservation, ResizeObservation
 from gym import wrappers
 from gym.wrappers.record_video import RecordVideo
 import numpy as np
@@ -45,6 +46,27 @@ class MarioAgent:
         self.memory = deque(maxlen=5000)
         self.batch_size = 32
         self.action_dim = action_dim
+
+    def save_checkpoint(self, path):
+        checkpoint = {
+            'q_net_state_dict': self.q_net.state_dict(),
+            'target_q_net_state_dict': self.target_q_net.state_dict(),
+            'optimizer_state_dict': self.optimizer.state_dict(),
+            'epsilon': self.epsilon,
+            'memory': list(self.memory),
+        }
+        torch.save(checkpoint, path)
+
+    def load_checkpoint(self, path):
+        if os.path.exists(path):
+            checkpoint = torch.load(path)
+            self.q_net.load_state_dict(checkpoint['q_net_state_dict'])
+            self.target_q_net.load_state_dict(checkpoint['target_q_net_state_dict'])
+            self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+            self.epsilon = checkpoint['epsilon']
+            self.memory = deque(checkpoint['memory'], maxlen=5000)
+        else:
+            print(f"No checkpoint found at {path}")
 
     def select_action(self, state):
         if random.random() < self.epsilon:
@@ -107,6 +129,8 @@ os.makedirs(video_folder, exist_ok=True)
 # Create the Mario environment
 env = gym_super_mario_bros.make('SuperMarioBros-v0')
 env = JoypadSpace(env, SIMPLE_MOVEMENT)  # Discretize controls
+
+# Record
 env = RecordVideo(
     env,
     video_folder=video_folder,
@@ -114,12 +138,20 @@ env = RecordVideo(
     name_prefix='mario-video-'
 )
 
+# Try to speed it up
+env = GrayScaleObservation(env)
+env = ResizeObservation(env, shape=84)
+
 # State and action space sizes
 state_shape = np.prod(env.observation_space.shape)
 action_size = env.action_space.n
 
 # Initialize agent
 agent = MarioAgent(state_shape, action_size)
+
+# This is for loading a model if you already have one
+checkpoint_path = "saved_model.pth"
+agent.load_checkpoint(checkpoint_path)
 
 # Training parameters
 num_episodes = 3
@@ -155,6 +187,8 @@ for episode in range(num_episodes):
     elapsed_time = time.time() - start_time
     print(f"Episode {episode+1} finished in {elapsed_time:.2f} seconds.")
     print(f"Episode {episode+1}, Total Reward: {total_reward}, Epsilon: {agent.epsilon:.4f}", flush=True)
+    if episode % 10 == 0:
+        agent.save_checkpoint(checkpoint_path)
 
     with writer.as_default():
         tf.summary.scalar('Total Reward', total_reward, step=episode)
@@ -164,6 +198,3 @@ for episode in range(num_episodes):
 
 # Cleanup
 env.close()
-save_path = "saved_model.pth"
-torch.save(agent.q_net.state_dict(), save_path)
-print(f"Model saved to {save_path}", flush=True)
