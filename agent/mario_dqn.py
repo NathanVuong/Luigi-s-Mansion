@@ -32,7 +32,7 @@ class QNetwork(nn.Module):
 
 # Define the Mario agent for Q-learning
 class MarioAgent:
-    def __init__(self, input_dim, action_dim, lr=0.001, gamma=0.99, epsilon=1.0, min_epsilon=0.01, decay=0.995):
+    def __init__(self, input_dim, action_dim, lr=0.001, gamma=0.99, epsilon=1.0, min_epsilon=0.01, decay=0.997):
         self.q_net = QNetwork(input_dim, action_dim).float()
         self.target_q_net = QNetwork(input_dim, action_dim).float()
         self.target_q_net.load_state_dict(self.q_net.state_dict())
