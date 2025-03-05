@@ -1,0 +1,9 @@
+make second environment or backup original nes py file (also in safe folder).
+
+python -c "import gym_super_mario_bros; print(gym_super_mario_bros.__file__)"
+cd /path/to/python/site-packages/gym_super_mario_bros/
+replace super-mario-bros.nes with your custom file here
+
+#or open it in folders
+#locate roms folder in cd folder
+#replace super-mario-bros.nes
