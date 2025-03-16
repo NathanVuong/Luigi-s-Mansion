@@ -94,13 +94,18 @@ class MarioAgent:
         self.action_dim = action_dim
 
         # Logging setup
-        self.log_dir = "logs"
+        self.log_dir = "logs_rainbowdqn"
         self.writer = tf.summary.create_file_writer(self.log_dir)
 
         self.log_file = "mario_rainbowdqn_log.csv"
         with open(self.log_file, "w") as f:
             w = csv.writer(f)
             w.writerow(["Episode", "X_Pos"])
+
+    def log_reward(self, total_reward, episode):
+        with self.writer.as_default():  # This ensures the summary is logged to the writer
+            tf.summary.scalar('Total Reward', total_reward, step=episode)  # Log total reward
+            self.writer.flush()
 
     def save_checkpoint(self, path):
         dir_path = os.path.dirname(path)
@@ -150,7 +155,6 @@ class MarioAgent:
         self.epsilon = max(self.min_epsilon, self.epsilon * self.decay)
         self.target_q_net.load_state_dict(self.q_net.state_dict())
 
-# Set up environment
 env = gym.make('SuperMarioBros-v0')
 env = JoypadSpace(env, SIMPLE_MOVEMENT)
 env = GrayScaleObservation(env)
@@ -159,23 +163,49 @@ state_shape = np.prod(env.observation_space.shape)
 action_size = env.action_space.n
 agent = MarioAgent(state_shape, action_size)
 agent.load_checkpoint(saved_checkpoint_path)
-num_episodes = 60
+num_episodes = 100001
 for episode in range(num_episodes):
     start_time = time.time()
     state = np.array(env.reset()).flatten()
     total_reward = 0
     max_x_pos = 0
+
+    data = {
+                "last_x": 0,
+                "max_x": 0,
+                "max_reward": 0,
+                "total_reward": 0,
+                "max_x_frame": None,
+                "event": None,
+                "jumps": 0
+            }
     for t in range(10000):
         action = agent.select_action(state)
         next_state, reward, done, info = env.step(action)
         agent.store_experience(state, action, reward, next_state, done)
         agent.train()
+        x_increase = max(0, info['x_pos'] - data["last_x"])
 
+        # if info["flag_get"]:
+        #     reward += 1000
+        #     reward += math.exp(-0.005 * info["time"]) * 1000
+        #     done = True
+        #     print("GOAL")
+        #     data["event"] = "finished"
+
+        #     # Punish dying
+        #     if info["life"] < 2:
+        #         reward -= 50
+        #         done = True
+        #         data["event"] = "death"
+
+        # data["last_x"] = info['x_pos']
         if info['x_pos'] > max_x_pos:
             max_x_pos = info['x_pos']
             max_x_frame = state.copy()
         
         max_x_pos = max(max_x_pos, info['x_pos'])
+        # data["total_reward"] += reward
 
         state = next_state.flatten()
         total_reward += reward
@@ -186,6 +216,8 @@ for episode in range(num_episodes):
     with open(agent.log_file, "a") as f: #log max_x_pos csv
         w = csv.writer(f)
         w.writerow([episode, max_x_pos])
+    
+    agent.log_reward(total_reward, episode)
         
     if episode % 10 == 0:
         checkpoint_path = f"RainbowDQN/{SLURM_ID}/{episode}.pth"
