@@ -26,12 +26,8 @@ from PIL import Image
 
 SLURM_ID = os.getenv("SLURM_JOB_ID")
 verbose = False #set to true if you want to save each episode + more details
-
-class Reward(Wrapper):
-    def __init__(self):
-        pass 
-    
-
+jump_actions = [2, 4, 5]
+speed_actions = [3, 4]
 
 # Define the Q-Network model
 class QNetwork(nn.Module):
@@ -64,6 +60,7 @@ class MarioAgent:
         self.memory = deque(maxlen=5000)
         self.batch_size = 32
         self.action_dim = action_dim
+        self.last_action = None
 
     def save_checkpoint(self, path):
         checkpoint = {
@@ -93,6 +90,7 @@ class MarioAgent:
             state = torch.tensor(state, dtype=torch.float32).unsqueeze(0)  # Add batch dimension
             with torch.no_grad():
                 return torch.argmax(self.q_net(state)).item()
+        self.last_action = action
 
     def store_experience(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done))
@@ -145,10 +143,10 @@ class DQN():
         self.log_file = "mario_dqn_log.csv"
         with open(self.log_file, "w") as f:
             w = csv.writer(f)
-            w.writerow(["Episode", "X_Pos"])
+            w.writerow(["Episode", "Event", "X_Pos"])
 
         self.img_dir = "imgs"
-        os.makedir(self.img_dir, exist_ok=True)
+        os.makedirs(self.img_dir, exist_ok=True)
 
         # Video recording setup
         self.video_folder = "recorded_videos"
@@ -174,6 +172,27 @@ class DQN():
         self.env = GrayScaleObservation(self.env)
         self.env = ResizeObservation(self.env, shape=84)
 
+    def save(self, episode):
+        if verbose:
+            # Save model checkpoint after each episode
+            save_path = f"{SLURM_ID}/saved_model_episode_{episode+1}.pth"
+            torch.save(agent.q_net.state_dict(), save_path)
+            print(f"Model saved to {save_path}", flush=True)
+
+    def log(self, episode, data):
+        '''Logs Image, X position, and Reward'''
+        if data["max_x_frame"] is not None:
+            img = Image.fromarray(data["max_x_frame"].reshape(84, 84))  # Assuming your state is grayscale 84x84
+            img.save(f"{self.img_dir}/episode{episode+1}_pos{data['max_x']}.png")
+            print(f"Saved max x-position frame for Episode {episode+1}")
+
+        with open(self.log_file, "a") as f: #log max_x_pos csv
+            w = csv.writer(f)
+            w.writerow([episode, data['event'], data['max_x']])
+
+        with self.writer.as_default(): #log reward tf
+            tf.summary.scalar('Total Reward', data["total_reward"], step=episode)
+
     def run(self, num_episodes=3, checkpoint_path="saved_model.pth"):
         # State and action space sizes
         state_shape = np.prod(self.env.observation_space.shape)
@@ -194,15 +213,23 @@ class DQN():
             state = np.array(state).flatten()
             # env.render()
 
-            max_x_pos = 0
-            max_reward = 0
-            total_reward = 0
-            max_x_frame = None
+            data = {
+                "last_x": 0,
+                "max_x": 0,
+                "max_reward": 0,
+                "total_reward": 0,
+                "max_x_frame": None,
+                "event": None,
+                "jumps": 0
+            }
+
             steps = 10000
             skip_frames = 4  # Process every 4th frame
             for t in range(steps):
                 if t % skip_frames == 0:
                     action = agent.select_action(state)
+                # else:
+                #     action = agent.last_action
 
                 next_state, reward, done, info = self.env.step(action)
                 next_state = np.array(next_state).flatten()
@@ -210,41 +237,66 @@ class DQN():
                 agent.store_experience(state, action, reward, next_state, done)
                 agent.train()
 
-                if info['x_pos'] > max_x_pos:
-                    max_x_pos = info['x_pos']
-                    max_x_frame = state.copy()
+                x_increase = max(0, info['x_pos'] - data["last_x"])
+
+                # # Custom Reward
+                # # Increase penalty for standing still
+                # if action == 0:
+                #     reward -= 200
                 
-                max_reward  = max(max_reward, reward)
-                total_reward += reward
-                max_x_pos = max(max_x_pos, info['x_pos'])
+                # # Reward moving right more aggressively
+                # if action in speed_actions:
+                #     reward += x_increase * 2.0  # Increased reward for moving right
+                # else:
+                #     reward += x_increase * 1.5  # Slightly lower reward for other actions
+
+                # # Encourage being speedy
+                # if action in speed_actions:
+                #     reward += max(0, info['x_pos'] - data["max_x"]) * 1.2
+                # else:
+                #     reward += max(0, info['x_pos'] - data["max_x"])
+
+                # if x_increase == 0:
+                #     if action in jump_actions:
+                #         jumps += 1
+                #         reward += 10 * min(jumps, 5)  # Increase reward for sustained jumping
+                #     else:
+                #         jumps = 0
+                #         reward -= 5
+
+                if info["flag_get"]:
+                    reward += 1000
+                    reward += math.exp(-0.005 * info["time"]) * 1000
+                    done = True
+                    print("GOAL")
+                    data["event"] = "finished"
+
+                # Punish dying
+                if info["life"] < 2:
+                    reward -= 50
+                    done = True
+                    data["event"] = "death"
+                
+                data["last_x"] = info['x_pos']
+                if info['x_pos'] > data["max_x"]:
+                    data["max_x"] = info['x_pos']
+                    data["max_x_frame"] = state.copy()
+                data["total_reward"] += reward
+                data["max_reward"] = max(data["max_reward"], reward)
 
                 state = next_state
+
                 if done:  # If episode ends, break and reset
                     break
 
             elapsed_time = time.time() - start_time
             print(f"Episode {episode+1} finished in {elapsed_time:.2f} seconds.")
-            print(f"Episode {episode+1}, Total Reward: {total_reward}, Max X-Position: {max_x_pos}, Epsilon: {agent.epsilon:.4f}", flush=True)
+            print(f"Episode {episode+1}, Total Reward: {data['total_reward']}, Max X-Position: {data['max_x']}, Epsilon: {agent.epsilon:.4f}", flush=True)
+            
             if episode % 10 == 0:
                 agent.save_checkpoint(checkpoint_path)
-
-            if verbose:
-                # Save model checkpoint after each episode
-                save_path = f"{SLURM_ID}/saved_model_episode_{episode+1}.pth"
-                torch.save(agent.q_net.state_dict(), save_path)
-                print(f"Model saved to {save_path}", flush=True)
-
-            if max_x_frame is not None:
-                img = Image.fromarray(max_x_frame.reshape(84, 84))  # Assuming your state is grayscale 84x84
-                img.save(f"{self.img_dir}/max_x_position_frame_episode_{episode+1}.png")
-                print(f"Saved max x-position frame for Episode {episode+1}")
-
-            with open(self.log_file, "a") as f: #log max_x_pos csv
-                w = csv.writer(f)
-                w.writerow([episode, max_x_pos])
-
-            with self.writer.as_default(): #log reward tf
-                tf.summary.scalar('Total Reward', total_reward, step=episode)
+            self.save(episode)
+            self.log(episode, data)
 
             # Ensure reset after each episode
             state = np.array(state).flatten()
