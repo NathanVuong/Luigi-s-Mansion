@@ -20,10 +20,18 @@ import random
 from collections import deque
 import tensorflow as tf
 import time
+import csv
 import shutil
+from PIL import Image
 
 SLURM_ID = os.getenv("SLURM_JOB_ID")
 verbose = False #set to true if you want to save each episode + more details
+
+class Reward(Wrapper):
+    def __init__(self):
+        pass 
+    
+
 
 # Define the Q-Network model
 class QNetwork(nn.Module):
@@ -128,97 +136,124 @@ class MarioAgent:
         if random.random() < 0.01:
             self.target_q_net.load_state_dict(self.q_net.state_dict())
 
-# Logging setup
-log_dir = "logs"
-writer = tf.summary.create_file_writer(log_dir)
+class DQN():
+    def __init__(self):
+        # Logging setup
+        self.log_dir = "logs"
+        self.writer = tf.summary.create_file_writer(self.log_dir)
 
-# Video recording setup
-video_folder = "recorded_videos"
-os.makedirs(video_folder, exist_ok=True)
+        self.log_file = "mario_dqn_log.csv"
+        with open(self.log_file, "w") as f:
+            w = csv.writer(f)
+            w.writerow(["Episode", "X_Pos"])
 
-# Set up episode models folder
-if verbose:
-    os.makedirs(SLURM_ID, exist_ok=True) 
+        self.img_dir = "imgs"
+        os.makedir(self.img_dir, exist_ok=True)
 
-# Create the Mario environment
-env = gym_super_mario_bros.make('SuperMarioBros-v0')
-env = JoypadSpace(env, SIMPLE_MOVEMENT)  # Discretize controls
+        # Video recording setup
+        self.video_folder = "recorded_videos"
+        os.makedirs(self.video_folder, exist_ok=True)
 
-# Record
-env = RecordVideo(
-    env,
-    video_folder=video_folder,
-    episode_trigger=lambda episode_id: episode_id % 10000 == 0,  # Record every 10,000 episodes
-    name_prefix='mario-video-'
-)
+        # Set up episode models folder
+        if verbose:
+            os.makedirs(SLURM_ID, exist_ok=True) 
 
-# Try to speed it up
-env = GrayScaleObservation(env)
-env = ResizeObservation(env, shape=84)
+        # Create the Mario environment
+        self.env = gym_super_mario_bros.make('SuperMarioBros-v0')
+        self.env = JoypadSpace(self.env, SIMPLE_MOVEMENT)  # Discretize controls
 
-# State and action space sizes
-state_shape = np.prod(env.observation_space.shape)
-action_size = env.action_space.n
+        # Record
+        self.env = RecordVideo(
+            self.env,
+            video_folder=self.video_folder,
+            episode_trigger=lambda episode_id: episode_id % 10 == 0,  # Record every 10,000 episodes
+            name_prefix='mario-video-'
+        )
 
-# Initialize agent
-agent = MarioAgent(state_shape, action_size)
+        # Try to speed it up
+        self.env = GrayScaleObservation(self.env)
+        self.env = ResizeObservation(self.env, shape=84)
 
-# This is for loading a model if you already have one
-checkpoint_path = "saved_model.pth"
-agent.load_checkpoint(checkpoint_path)
+    def run(self, num_episodes=3, checkpoint_path="saved_model.pth"):
+        # State and action space sizes
+        state_shape = np.prod(self.env.observation_space.shape)
+        action_size = self.env.action_space.n
 
-# Training parameters
-num_episodes = 3
+        # Initialize agent
+        agent = MarioAgent(state_shape, action_size)
 
-print("--------------------------Begin Episodes-------------------------", flush=True)
-for episode in range(num_episodes):
-    start_time = time.time()
-    print(f"Start of Episode {episode+1}", flush=True)
+        # This is for loading a model if you already have one
+        agent.load_checkpoint(checkpoint_path)
 
-    state = env.reset()  # Gym 0.26+ returns (obs, info)
-    state = np.array(state).flatten()
-    # env.render()
+        print("--------------------------Begin Episodes-------------------------", flush=True)
+        for episode in range(num_episodes):
+            start_time = time.time()
+            print(f"Start of Episode {episode+1}", flush=True)
 
-    total_reward = 0
-    skip_frames = 4  # Process every 4th frame
-    for t in range(10000):
-        if t % skip_frames == 0:
-            action = agent.select_action(state)
+            state = self.env.reset()  # Gym 0.26+ returns (obs, info)
+            state = np.array(state).flatten()
+            # env.render()
 
-        next_state, reward, done, info = env.step(action)
+            max_x_pos = 0
+            max_reward = 0
+            total_reward = 0
+            max_x_frame = None
+            steps = 10000
+            skip_frames = 4  # Process every 4th frame
+            for t in range(steps):
+                if t % skip_frames == 0:
+                    action = agent.select_action(state)
 
-        next_state = np.array(next_state).flatten()
+                next_state, reward, done, info = self.env.step(action)
+                next_state = np.array(next_state).flatten()
 
-        agent.store_experience(state, action, reward, next_state, done)
-        agent.train()
+                agent.store_experience(state, action, reward, next_state, done)
+                agent.train()
 
-        state = next_state
-        total_reward += reward
+                if info['x_pos'] > max_x_pos:
+                    max_x_pos = info['x_pos']
+                    max_x_frame = state.copy()
+                
+                max_reward  = max(max_reward, reward)
+                total_reward += reward
+                max_x_pos = max(max_x_pos, info['x_pos'])
 
-        if done:  # If episode ends, break and reset
-            break
+                state = next_state
+                if done:  # If episode ends, break and reset
+                    break
 
-    elapsed_time = time.time() - start_time
-    print(f"Episode {episode+1} finished in {elapsed_time:.2f} seconds.")
-    print(f"Episode {episode+1}, Total Reward: {total_reward}, Epsilon: {agent.epsilon:.4f}", flush=True)
-    if episode % 10 == 0:
-        agent.save_checkpoint(checkpoint_path)
+            elapsed_time = time.time() - start_time
+            print(f"Episode {episode+1} finished in {elapsed_time:.2f} seconds.")
+            print(f"Episode {episode+1}, Total Reward: {total_reward}, Max X-Position: {max_x_pos}, Epsilon: {agent.epsilon:.4f}", flush=True)
+            if episode % 10 == 0:
+                agent.save_checkpoint(checkpoint_path)
 
-    if verbose:
-        # Save model checkpoint after each episode
-        save_path = f"{SLURM_ID}/saved_model_episode_{episode+1}.pth"
+            if verbose:
+                # Save model checkpoint after each episode
+                save_path = f"{SLURM_ID}/saved_model_episode_{episode+1}.pth"
+                torch.save(agent.q_net.state_dict(), save_path)
+                print(f"Model saved to {save_path}", flush=True)
+
+            if max_x_frame is not None:
+                img = Image.fromarray(max_x_frame.reshape(84, 84))  # Assuming your state is grayscale 84x84
+                img.save(f"{self.img_dir}/max_x_position_frame_episode_{episode+1}.png")
+                print(f"Saved max x-position frame for Episode {episode+1}")
+
+            with open(self.log_file, "a") as f: #log max_x_pos csv
+                w = csv.writer(f)
+                w.writerow([episode, max_x_pos])
+
+            with self.writer.as_default(): #log reward tf
+                tf.summary.scalar('Total Reward', total_reward, step=episode)
+
+            # Ensure reset after each episode
+            state = np.array(state).flatten()
+
+        # Cleanup
+        self.env.close()
+        save_path = f"{SLURM_ID}_saved_model.pth" if not verbose else f"{SLURM_ID}/saved_model.pth"
         torch.save(agent.q_net.state_dict(), save_path)
         print(f"Model saved to {save_path}", flush=True)
 
-    with writer.as_default():
-        tf.summary.scalar('Total Reward', total_reward, step=episode)
-
-    # Ensure reset after each episode
-    state = np.array(state).flatten()
-
-# Cleanup
-env.close()
-
-save_path = f"{SLURM_ID}_saved_model.pth" if not verbose else f"{SLURM_ID}/saved_model.pth"
-torch.save(agent.q_net.state_dict(), save_path)
-print(f"Model saved to {save_path}", flush=True)
+run = DQN()
+run.run()
