@@ -1,0 +1,12 @@
+https://rcic.uci.edu/account/generate-ssh-keys.html#generate-ssh-keys-mac
+create key (specify exact path then path/key-to-hpc3)
+navigate to directory of key
+
+type <path to key-to-hpc3.pub> | ssh netid@hpc3.rcic.uci.edu "cat >> .ssh/authorized_keys"
+#copy key into ssh, and cat it into the authorized keys
+
+#vscode config file 
+Host hpc3.rcic.uci.edu
+  IdentityFile <path-to-key-to-hpc3 without .pub>
+  HostName hpc3.rcic.uci.edu
+  User netid
