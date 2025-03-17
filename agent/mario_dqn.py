@@ -85,12 +85,13 @@ class MarioAgent:
 
     def select_action(self, state):
         if random.random() < self.epsilon:
+            self.last_action = action
             return random.randint(0, self.action_dim - 1)
         else:
             state = torch.tensor(state, dtype=torch.float32).unsqueeze(0)  # Add batch dimension
             with torch.no_grad():
+                self.last_action = action
                 return torch.argmax(self.q_net(state)).item()
-        self.last_action = action
 
     def store_experience(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done))
@@ -181,7 +182,7 @@ class DQN():
 
     def log(self, episode, data):
         '''Logs Image, X position, and Reward'''
-        if data["max_x_frame"] is not None:
+        if data["max_x_frame"] is not None: #only log after u finish
             img = Image.fromarray(data["max_x_frame"].reshape(84, 84))  # Assuming your state is grayscale 84x84
             img.save(f"{self.img_dir}/episode{episode+1}_pos{data['max_x']}.png")
             print(f"Saved max x-position frame for Episode {episode+1}")
@@ -228,8 +229,8 @@ class DQN():
             for t in range(steps):
                 if t % skip_frames == 0:
                     action = agent.select_action(state)
-                # else:
-                #     action = agent.last_action
+                else:
+                    action = agent.last_action if agent.last_action else None
 
                 next_state, reward, done, info = self.env.step(action)
                 next_state = np.array(next_state).flatten()
@@ -239,30 +240,30 @@ class DQN():
 
                 x_increase = max(0, info['x_pos'] - data["last_x"])
 
-                # # Custom Reward
-                # # Increase penalty for standing still
-                # if action == 0:
-                #     reward -= 200
-                
-                # # Reward moving right more aggressively
-                # if action in speed_actions:
-                #     reward += x_increase * 2.0  # Increased reward for moving right
-                # else:
-                #     reward += x_increase * 1.5  # Slightly lower reward for other actions
+                if action:
+                    # Increase penalty for standing still
+                    if action == 0:
+                        reward -= 200
+                    
+                    # Reward moving right more aggressively
+                    if action in speed_actions:
+                        reward += x_increase * 2.0  # Increased reward for moving right
+                    else:
+                        reward += x_increase * 1.5  # Slightly lower reward for other actions
 
-                # # Encourage being speedy
-                # if action in speed_actions:
-                #     reward += max(0, info['x_pos'] - data["max_x"]) * 1.2
-                # else:
-                #     reward += max(0, info['x_pos'] - data["max_x"])
+                    # Encourage being speedy
+                    if action in speed_actions:
+                        reward += max(0, info['x_pos'] - data["max_x"]) * 1.2
+                    else:
+                        reward += max(0, info['x_pos'] - data["max_x"])
 
-                # if x_increase == 0:
-                #     if action in jump_actions:
-                #         jumps += 1
-                #         reward += 10 * min(jumps, 5)  # Increase reward for sustained jumping
-                #     else:
-                #         jumps = 0
-                #         reward -= 5
+                    if x_increase == 0:
+                        if action in jump_actions:
+                            data["jumps"] += 1
+                            reward += 10 * min(data["jumps"], 5)  # Increase reward for sustained jumping
+                        else:
+                            data["jumps"] = 0
+                            reward -= 5
 
                 if info["flag_get"]:
                     reward += 1000
