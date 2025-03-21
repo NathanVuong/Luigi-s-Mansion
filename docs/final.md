@@ -321,18 +321,18 @@ Logging function (log_x_pos):
    - Save Mario's progress (episode number, event type, and position) in a file.
 ```
 
-### *Model Comparison Summary*
-**DQN**
-Advantages: Handles high-dimensional input.
-Disadvantages: Heavy compute, requires a large dataset, and can be unstable.
+### <ins>Model Comparison Summary</ins>   
+**DQN**   
+Advantages: Handles high-dimensional input.   
+Disadvantages: Heavy compute, requires a large dataset, and can be unstable.   
 
-**Rainbow DQN**
-Advantages: Better exploration due to noisy networks, and improved stability over DQN.
-Disadvantages: Even slower and requires heavier compute than DQN. Hyperparameter tuning is difficult, which can lead to longer training and potential instability.
+**Rainbow DQN**   
+Advantages: Better exploration due to noisy networks, and improved stability over DQN.   
+Disadvantages: Even slower and requires heavier compute than DQN. Hyperparameter tuning is difficult, which can lead to longer training and potential instability.   
 
-**PPO**
-Advantages: Balanced exploration and exploitation, reliable training.
-Disadvantages: Slow and requires heavy compute. Struggles with long-term dependencies.
+**PPO**   
+Advantages: Balanced exploration and exploitation, reliable training.   
+Disadvantages: Slow and requires heavy compute. Struggles with long-term dependencies.   
    
 ## **Evaluation**
 We ran three different models, DQN, Rainbow DQN, and PPO. Since rewards differ per model (PPO’s reward completely overwrote the original reward function, whereas the DQNs added onto the previous reward, and having models with base and custom reward), we cannot directly compare model performance by reward. Instead, we compared general model performance via its ability to finish or progress through the level. To do this, we compare the trend of wins/episodes and maximum X position for each agent.
