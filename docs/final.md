@@ -322,15 +322,16 @@ Logging function (log_x_pos):
 ```
 
 ### *Model Comparison Summary*
-| Model         | Advantages                                     | Disadvantages                                                       |
-|----------------|------------------------------------------------|--------------------------------------------------------------------|
-| **DQN**        | - Handles high-dimensional input               | - Heavy compute                                                    |
-|                |                                                | - Requires large dataset                                           |
-|                |                                                | - Can be unstable                                                  |
-| **Rainbow DQN**| - Better exploration (due to noisy networks)  | - Even slower and heavier compute than DQN                        |
-|                | - Improved stability over DQN                 | - Hyperparameter tuning is difficult, leading to longer training and potential instability |
-| **PPO**        | - Balanced exploration and exploitation       | - Slow and heavy compute                                          |
-|                | - Reliable training                           | - Struggles with long-term dependencies                           |
+| Model           | Advantages                                      | Disadvantages                                                       |
+|------------------|--------------------------------------------------------|--------------------------------------------------------------------|
+| **DQN**          | - Handles high-dimensional input                       | - Heavy compute                                                    |
+|                  |                                                        | - Requires large dataset                                           |
+|                  |                                                        | - Can be unstable                                                  |
+| **Rainbow DQN**  | - Better exploration (due to noisy networks)          | - Even slower and heavier compute than DQN                        |
+|                  | - Improved stability over DQN                         | - Hyperparameter tuning is difficult, leading to longer training and potential instability |
+| **PPO**          | - Balanced exploration and exploitation               | - Slow and heavy compute                                           |
+|                  | - Reliable training                                   | - Struggles with long-term dependencies                            |
+
 
 ## **Evaluation**
 We ran three different models, DQN, Rainbow DQN, and PPO. Since rewards differ per model (PPO’s reward completely overwrote the original reward function, whereas the DQNs added onto the previous reward, and having models with base and custom reward), we cannot directly compare model performance by reward. Instead, we compared general model performance via its ability to finish or progress through the level. To do this, we compare the trend of wins/episodes and maximum X position for each agent.
@@ -361,15 +362,17 @@ An example of this is observed when the agent encounters a double pipe obstacle 
   <p></p> 
 </div>
 
-
 ### <ins>Rainbow DQN</ins>  
 Despite showing promise early in training, Rainbow DQN has not yet fully completed an entire level, but the maximum x-position reached was 2043 pixels (2/3rds of the level). However, when compared to the DQN model, Rainbow DQN exhibits a more strategic approach in gameplay. Instead of blindly advancing and jumping continuously (a behavior often observed in DQN), Rainbow DQN learns to navigate obstacles more efficiently. 
 
 *Qualitative Evaluation:*   
 An example of this is observed when the agent encounters a double pipe obstacle. Instead of repeatedly walking into the pipe / small jumping forward (as DQN does), Rainbow DQN figures out that slightly moving backwards allows him to avoid goombas while giving him enough space to jump over the pipes successfully. Additionally, Rainbow DQN demonstrates improved goomba avoidance strategies. Unlike DQN, which frequently reactsively spams jumps, Rainbow DQN learns to use blocks in the air to navigate obstacles more efficiently, which makes its jumps more efficient and avoids unnecessary actions. 
 
-![Mario Using Blocks to Avoid Goombas and Later Using it Jump Off to Pass Double Pipe.](images/RDQN_qualitative.png)
-*Mario Using Blocks to Avoid Goombas and Later Using it Jump Off to Pass Double Pipe.*
+<div style="text-align: center;">
+  <img src="images/RDQN_qualitative.png" alt="Mario Using Blocks to Avoid Goombas and Later Using it Jump Off to Pass Double Pipe." />
+  <p><em>Mario Using Blocks to Avoid Goombas and Later Using it Jump Off to Pass Double Pipe.</em></p>
+  <p></p> <!-- This adds a line break by creating an empty paragraph -->
+</div>
 
 *Quantitative Evaluation:*   
 
